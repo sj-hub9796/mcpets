@@ -355,29 +355,42 @@ public class PetFood {
 
     /**
      * Get the pet food object from the item stack if it represents one
-     * @param it
+     * @param handItem
      * @return
      */
-    public static PetFood getFromItem(ItemStack it)
-    {
-        if(it == null)
-            return null;
-        // if the item is a default MC item, then look for possible matches
-        if(!it.hasItemMeta() || !it.getItemMeta().hasItemName())
-        {
-            return PetFoodConfig.getInstance().list().stream()
-                    .filter(petFood -> petFood.isDefaultMCItem()
-                            && petFood.getItemStack() != null
-                            && petFood.getItemStack().getType().equals(it.getType()))
-                    .findFirst()
-                    .orElse(null);
+    public static PetFood getFromItem(ItemStack handItem) {
+        if (handItem == null || handItem.getItemMeta() == null) return null;
+
+        PetFood resultFood = null;
+        for (PetFood petFoods : PetFoodConfig.getInstance().list()) {
+
+            if (petFoods == null || petFoods.getItemStack() == null || petFoods.getItemStack().getItemMeta() == null) continue;
+
+            if (petFoods.getItemStack().isSimilar(handItem)) {
+                resultFood = petFoods;
+                break;
+            }
+
+            // find ItemsAdder Items
+            if (MCPets.isItemsAdderLoaded()) {
+                CustomStack handCustomStack = CustomStack.byItemStack(handItem);
+                CustomStack foodCustomStack = CustomStack.byItemStack(petFoods.getItemStack());
+
+                if (handCustomStack == null || foodCustomStack == null) continue;
+
+                // get <namespace>:<id>
+                String handId = handCustomStack.getNamespacedID();
+                String foodId = foodCustomStack.getNamespacedID();
+
+                // check their id is same
+                if (handId.equals(foodId)) {
+                    resultFood = petFoods;
+                    break;
+                }
+            }
         }
-        // if the item isn't a default MCItem, go through the localized informations
-        return PetFoodConfig.getInstance().list().stream()
-                .filter(petFood -> petFood.getItemStack() != null
-                        && petFood.getItemStack().getItemMeta().getItemName().equals(it.getItemMeta().getItemName()))
-                .findFirst()
-                .orElse(null);
+
+        return resultFood;
     }
 
     /**
